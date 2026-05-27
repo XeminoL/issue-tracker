@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Issue Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='theme.css') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: var(--login-bg);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--container-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px var(--shadow-color);
+            max-width: 450px;
+            width: 100%;
+            border: 1px solid var(--border-color);
+        }
+
+        h1 {
+            color: var(--text-color);
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-color);
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--input-border);
+            border-radius: 4px;
+            font-size: 14px;
+            background-color: var(--input-bg);
+            color: var(--input-text);
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: var(--button-primary);
+            box-shadow: 0 0 5px var(--focus-shadow);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--button-primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: var(--button-primary-hover);
+        }
+
+        .link {
+            text-align: center;
+            margin-top: 20px;
+            color: var(--text-muted);
+        }
+
+        .link a {
+            color: var(--button-primary);
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div style="position: fixed; top: 16px; right: 16px;">
+        <button id="theme-toggle" title="Toggle dark mode">🌙</button>
+    </div>
+
+    <div class="container">
+        <h1>Issue Tracker</h1>
+        <p class="subtitle">Create your account</p>
+
+        <div class="info">
+            You're creating a new workspace. This will be your organization's dedicated space.
+        </div>
+
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST">
+            <div class="form-group">
+                <label for="tenant_name">Workspace Name:</label>
+                <input type="text" id="tenant_name" name="tenant_name" placeholder="e.g., Acme Corp" required>
+            </div>
+
+            <div class="form-group">
+                <label for="tenant_slug">Workspace Slug:</label>
+                <input type="text" id="tenant_slug" name="tenant_slug" placeholder="e.g., acme-corp (lowercase, no spaces)" required>
+            </div>
+
+            <div class="form-group">
+                <label for="name">Your Name:</label>
+                <input type="text" id="name" name="name" placeholder="John Doe" required>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" placeholder="your@email.com" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" placeholder="Enter a strong password" required>
+            </div>
+
+            <button type="submit">Create Account</button>
+        </form>
+
+        <div class="link">
+            Already have an account? <a href="{{ url_for('login') }}">Login here</a>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
+</body>
+</html>

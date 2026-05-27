@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Issue Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='theme.css') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--page-bg);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .header {
+            background-color: var(--header-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px var(--shadow-color);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .header-info h1 {
+            color: var(--text-color);
+            margin-bottom: 5px;
+        }
+
+        .header-info p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            background-color: var(--button-danger);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .logout-btn:hover {
+            background-color: var(--button-danger-hover);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: var(--container-bg);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px var(--shadow-color);
+            border: 1px solid var(--border-color);
+        }
+
+        h2 {
+            color: var(--text-color);
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-color);
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--input-border);
+            border-radius: 4px;
+            font-size: 14px;
+            background-color: var(--input-bg);
+            color: var(--input-text);
+            transition: border-color 0.3s;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        button {
+            background-color: var(--button-primary);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: var(--button-primary-hover);
+        }
+
+        .issues-list {
+            margin-top: 30px;
+        }
+
+        .issue-item {
+            background-color: var(--issue-bg);
+            padding: 15px;
+            border-left: 4px solid var(--issue-border);
+            margin-bottom: 15px;
+            border-radius: 4px;
+            border-top: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .issue-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--text-color);
+            margin-bottom: 5px;
+        }
+
+        .issue-description {
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .issue-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+
+        .status-open {
+            background-color: var(--status-open-bg);
+            color: var(--status-open-text);
+        }
+
+        .status-closed {
+            background-color: var(--status-closed-bg);
+            color: var(--status-closed-text);
+        }
+
+        .issue-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        .btn-danger {
+            background-color: var(--button-danger);
+        }
+
+        .btn-danger:hover {
+            background-color: var(--button-danger-hover);
+        }
+
+        .btn-success {
+            background-color: var(--button-success);
+        }
+
+        .btn-success:hover {
+            background-color: var(--button-success-hover);
+        }
+
+        .no-issues {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        .toast-success {
+            background-color: var(--button-success);
+            color: white;
+        }
+
+        .toast-error {
+            background-color: var(--button-danger);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-info">
+            <h1>Issue Tracker</h1>
+            <p>Workspace: <strong>{{ tenant.name }}</strong> | User: <strong>{{ user.name }}</strong></p>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <button id="theme-toggle" title="Toggle dark mode">🌙</button>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Create New Issue</h2>
+        <form id="issueForm">
+            <div class="form-group">
+                <label for="title">Title:</label>
+                <input type="text" id="title" name="title" placeholder="Enter issue title" required maxlength="200">
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description:</label>
+                <textarea id="description" name="description" placeholder="Enter issue description"></textarea>
+            </div>
+
+            <button type="submit">Create Issue</button>
+        </form>
+
+        <div class="issues-list">
+            <h2>Issues in {{ tenant.name }}</h2>
+            <div id="issuesList"></div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', loadIssues);
+
+        document.getElementById('issueForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const title = document.getElementById('title').value.trim();
+            const description = document.getElementById('description').value.trim();
+
+            if (!title) {
+                showToast('Title is required', 'error');
+                return;
+            }
+
+            const response = await fetch('/api/issues', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, description })
+            });
+
+            if (response.ok) {
+                document.getElementById('issueForm').reset();
+                loadIssues();
+                showToast('Issue created', 'success');
+            } else {
+                const data = await response.json();
+                showToast(data.error || 'Failed to create issue', 'error');
+            }
+        });
+
+        async function loadIssues() {
+            const response = await fetch('/api/issues');
+            const issues = await response.json();
+
+            const issuesList = document.getElementById('issuesList');
+            issuesList.innerHTML = '';
+
+            if (issues.length === 0) {
+                issuesList.innerHTML = '<p class="no-issues">No issues yet. Create one to get started!</p>';
+                return;
+            }
+
+            issues.forEach(issue => {
+                const statusClass = issue.status === 'open' ? 'status-open' : 'status-closed';
+                const escapedTitle = escapeHtml(issue.title);
+                const escapedDesc = escapeHtml(issue.description || 'No description');
+                const html = `
+                    <div class="issue-item">
+                        <div class="issue-title">#${issue.id} - ${escapedTitle}</div>
+                        <div class="issue-description">${escapedDesc}</div>
+                        <div class="issue-meta">
+                            <span class="status-badge ${statusClass}">${issue.status.toUpperCase()}</span>
+                            <span>${issue.created_at}</span>
+                        </div>
+                        <div class="issue-actions">
+                            ${issue.status === 'open'
+                                ? `<button class="btn-small btn-success" onclick="updateStatus(${issue.id}, 'closed')">Close</button>`
+                                : `<button class="btn-small btn-success" onclick="updateStatus(${issue.id}, 'open')">Reopen</button>`
+                            }
+                            <button class="btn-small btn-danger" onclick="deleteIssue(${issue.id})">Delete</button>
+                        </div>
+                    </div>
+                `;
+                issuesList.innerHTML += html;
+            });
+        }
+
+        async function updateStatus(issueId, newStatus) {
+            const response = await fetch(`/api/issues/${issueId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            });
+
+            if (response.ok) {
+                loadIssues();
+            } else {
+                const data = await response.json();
+                showToast(data.error || 'Failed to update issue', 'error');
+            }
+        }
+
+        async function deleteIssue(issueId) {
+            if (confirm('Are you sure you want to delete this issue?')) {
+                const response = await fetch(`/api/issues/${issueId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    loadIssues();
+                    showToast('Issue deleted', 'success');
+                } else {
+                    const data = await response.json();
+                    showToast(data.error || 'Failed to delete issue', 'error');
+                }
+            }
+        }
+
+        function escapeHtml(str) {
+            const d = document.createElement('div');
+            d.textContent = str;
+            return d.innerHTML;
+        }
+
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast toast-${type} show`;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+    </script>
+</body>
+</html>
