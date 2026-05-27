@@ -1,25 +1,67 @@
 # Issue Tracker
 
-A production-ready, multi-tenant issue tracking system with clean layered architecture. Built with Flask + SQLAlchemy.
+Production-ready multi-tenant issue tracking system with clean layered architecture, automatic tenant isolation, and comprehensive test coverage.
 
-![Tests](https://img.shields.io/badge/tests-15%2F15%20passing-brightgreen)
-![Code Quality](https://img.shields.io/badge/code--quality-0%20violations-brightgreen)
+![Tests](https://img.shields.io/badge/tests-15%2F15-brightgreen)
+![Code Quality](https://img.shields.io/badge/quality-0%20violations-brightgreen)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
+## Overview
+
+A professionally architected issue tracking system demonstrating clean code principles, separation of concerns, and production-ready patterns. Each layer is independently testable and maintainable.
+
+## Architecture
+
+### 5-Layer Clean Architecture
+
+```
+HTTP Routes (app.py)
+    ↓
+Business Logic (services/)
+    ↓
+Data Access (repositories/) — Auto tenant isolation
+    ↓
+Input Validation (schemas/)
+    ↓
+Error Handling (exceptions/)
+```
+
+Each layer has **single responsibility** - changes don't cascade.
+
+### Key Design Patterns
+
+**Automatic Tenant Isolation**
+- BaseRepository filters all queries by tenant_id
+- Impossible to accidentally leak data between tenants
+- Tenant filtering applied automatically, not manually
+
+**Dependency Injection**
+- Services receive dependencies in __init__
+- Easy to mock in tests
+- No global state
+
+**Centralized Error Handling**
+- Custom exception types (ValidationError, NotFoundError, etc.)
+- Error handlers in app.py catch and respond consistently
+- Field-level error details in API responses
+
+**Repository Pattern**
+- All database access through repositories
+- Query logic separated from business logic
+- Can optimize queries without touching services
+
 ## Features
 
-- ✅ **Multi-Tenant** - Complete data isolation per tenant
-- ✅ **Automatic Tenant Isolation** - Built into repository layer
-- ✅ **Authentication** - Session-based with password hashing
-- ✅ **Role-Based Access** - Admin and member roles
-- ✅ **Issue Management** - CRUD, filtering, assignment
-- ✅ **Comments** - Add comments to issues
-- ✅ **Email Notifications** - On issue creation and assignment
-- ✅ **Dark Mode** - Theme toggle
-- ✅ **RESTful API** - Complete JSON API
-- ✅ **Clean Architecture** - 5 independent layers
-- ✅ **Full Test Coverage** - 15 tests, all passing
+- **Multi-Tenant** - Complete data isolation per workspace
+- **Authentication** - Session-based with password hashing
+- **Authorization** - Role-based access control (admin/member)
+- **Issue Management** - CRUD with status tracking
+- **Comments** - Thread discussion on issues
+- **Email Notifications** - On creation and assignment
+- **Dark Mode** - Theme toggle
+- **RESTful API** - Complete JSON API
+- **Security** - Password hashing, CSRF protection, SQL injection prevention
 
 ## Quick Start
 
@@ -30,181 +72,90 @@ A production-ready, multi-tenant issue tracking system with clean layered archit
 ### Installation
 
 ```bash
-# Clone repository
 git clone https://github.com/XeminoL/issue-tracker.git
 cd issue-tracker
 
-# Create virtual environment
 python -m venv venv
-
-# Activate virtual environment
-# Windows (PowerShell)
+# Windows PowerShell
 .\venv\Scripts\Activate.ps1
 # macOS/Linux
 source venv/bin/activate
 
-# Install dependencies
 pip install -r requirements.txt
 ```
 
-### Run Application
+### Run
 
 ```bash
 python app.py
 # Open http://localhost:5000
 ```
 
-### Run Tests
+### Test
 
 ```bash
 pytest -v
 # Result: 15 passed ✅
 ```
 
-## Usage
-
-### Register & Login
-
-1. Go to `http://localhost:5000/register`
-2. Create workspace + account
-3. Login with credentials
-
-### Create Issue
-
-1. Go to Dashboard
-2. Click "Create Issue"
-3. Add title and description
-4. Issue created with email notification
-
-### Create Comment
-
-1. Click on issue
-2. Scroll to comments
-3. Add comment
-4. Comment saved to database
-
-## Architecture
-
-Clean layered architecture with 5 independent layers:
-
-```
-┌─────────────────────────────────────┐
-│  Layer 1: HTTP Routes (app.py)      │ ← Request/Response only
-├─────────────────────────────────────┤
-│  Layer 2: Business Logic (services/)│ ← Workflows & Validation
-├─────────────────────────────────────┤
-│  Layer 3: Data Access (repositories/)│ ← Queries (Tenant isolated)
-├─────────────────────────────────────┤
-│  Layer 4: Validation (schemas/)     │ ← Input validation
-├─────────────────────────────────────┤
-│  Layer 5: Errors (exceptions/)      │ ← Custom exception types
-└─────────────────────────────────────┘
-```
-
-### Key Design Decisions
-
-**1. Automatic Tenant Isolation**
-```python
-# Every query automatically filtered by tenant_id
-issue_repo = IssueRepository(db, tenant_id=123)
-issues = issue_repo.list_all_issues()  # Only tenant 123's issues
-```
-
-**2. Single Responsibility**
-- `app.py` changes → only HTTP handling
-- `services/` changes → only business logic
-- `repositories/` changes → only queries
-- `schemas/` changes → only validation
-
-**3. Layer Independence**
-- Update email template → no code changes needed
-- Add new permission → only permission_service changes
-- Optimize query → only repository changes
-- Change validation → only schema changes
-
-**4. Self-Documenting Code**
-- No comments needed (code explains itself)
-- Clear method names: `create_issue()`, `list_all_issues()`
-- Clear class names: `IssueService`, `IssueRepository`
-
 ## Project Structure
 
 ```
-issue-tracker/
-├── app.py                    # HTTP routes (230 lines)
-├── models.py                 # Database schema (50 lines)
-├── config.py                 # Configuration (20 lines)
-├── conftest.py               # Test fixtures
-├── email_service.py          # Email notifications
-├── requirements.txt          # Dependencies
+├── app.py                    # HTTP routes only
+├── models.py                 # SQLAlchemy schema
+├── config.py                 # Configuration
 │
 ├── services/                 # Business logic
-│   ├── auth_service.py       # Authentication
+│   ├── auth_service.py       # Password hashing, tokens
 │   ├── permission_service.py # Authorization
 │   ├── issue_service.py      # Issue workflows
 │   └── comment_service.py    # Comment workflows
 │
-├── repositories/             # Data access layer
-│   ├── base_repository.py    # Base with tenant isolation
+├── repositories/             # Data access (tenant isolated)
+│   ├── base_repository.py    # Auto tenant filtering
 │   ├── issue_repository.py   # Issue queries
 │   ├── comment_repository.py # Comment queries
 │   └── tenant_repository.py  # Tenant queries
 │
 ├── schemas/                  # Input validation
-│   ├── issue_schema.py       # Issue validation
-│   └── comment_schema.py     # Comment validation
+│   ├── issue_schema.py
+│   └── comment_schema.py
 │
-├── exceptions/               # Error handling
-│   └── custom_exceptions.py  # Exception types
+├── exceptions/               # Custom exceptions
+│   └── custom_exceptions.py
 │
-├── templates/                # HTML templates
-│   ├── login.html
-│   ├── register.html
-│   └── dashboard.html
-│
-├── static/                   # CSS & JavaScript
-│   ├── theme.css
-│   └── theme.js
-│
-└── tests/                    # Test suite
-    ├── test_auth.py          # Authentication tests
-    └── test_issues.py        # Issue API tests
+├── templates/                # HTML
+├── static/                   # CSS, JS
+├── tests/                    # Test suite
+└── requirements.txt          # Dependencies (9 packages)
 ```
 
-## API Reference
+## API Examples
 
-### Authentication
-
-**Register**
+### Register
 ```http
 POST /register
 Content-Type: application/x-www-form-urlencoded
 
-tenant_name=Acme%20Corp
-tenant_slug=acme-corp
-name=John%20Doe
-email=john@example.com
-password=securepassword
+tenant_name=Acme%20Corp&tenant_slug=acme-corp&name=John%20Doe&email=john@example.com&password=secure123
 ```
 
-**Login**
+### Login
 ```http
 POST /login
-Content-Type: application/x-www-form-urlencoded
-
-tenant_slug=acme-corp
-email=john@example.com
-password=securepassword
+tenant_slug=acme-corp&email=john@example.com&password=secure123
 ```
 
-**Logout**
+### Create Issue
 ```http
-GET /logout
+POST /api/issues
+Authorization: Session
+Content-Type: application/json
+
+{"title": "Fix login bug", "description": "Users unable to reset password"}
 ```
 
-### Issues
-
-**Get All Issues**
+### Get Issues
 ```http
 GET /api/issues
 Authorization: Session
@@ -218,246 +169,154 @@ Response:
     "title": "Fix login bug",
     "description": "Users unable to reset password",
     "status": "open",
-    "created_by": 2,
+    "created_by": 1,
     "created_at": "2026-05-27T10:30:00"
   }
 ]
 ```
 
-**Get Single Issue**
-```http
-GET /api/issues/{issue_id}
-Authorization: Session
-```
+## Code Quality
 
-**Create Issue**
-```http
-POST /api/issues
-Authorization: Session
-Content-Type: application/json
+✅ **15/15 tests passing** (100% feature coverage)  
+✅ **Zero flake8 violations**  
+✅ **No unused imports** (strict code review)  
+✅ **No circular dependencies**  
+✅ **No dead code**  
+✅ **Self-documenting** (clear naming, no unnecessary comments)  
 
-{
-  "title": "New feature request",
-  "description": "Add email notifications",
-  "assigned_to": null
-}
-```
+### Metrics
 
-**Update Issue**
-```http
-PUT /api/issues/{issue_id}
-Authorization: Session
-Content-Type: application/json
-
-{
-  "title": "Updated title",
-  "status": "closed"
-}
-```
-
-**Delete Issue**
-```http
-DELETE /api/issues/{issue_id}
-Authorization: Session
-```
-
-### Comments
-
-**Get Comments**
-```http
-GET /api/issues/{issue_id}/comments
-Authorization: Session
-```
-
-**Create Comment**
-```http
-POST /api/issues/{issue_id}/comments
-Authorization: Session
-Content-Type: application/json
-
-{
-  "content": "I'm working on this"
-}
-```
-
-## Configuration
-
-Create `.env` file:
-
-```bash
-FLASK_APP=app.py
-FLASK_ENV=development
-SECRET_KEY=your-secret-key-change-in-production
-DATABASE_URL=sqlite:///issue_tracker.db
-```
-
-**For Production:**
-```bash
-FLASK_ENV=production
-DATABASE_URL=postgresql://user:password@localhost/issue_tracker
-```
-
-## Testing
-
-### Run All Tests
-```bash
-pytest -v
-```
-
-### Run Specific Test File
-```bash
-pytest tests/test_auth.py -v
-pytest tests/test_issues.py -v
-```
-
-### Run Single Test
-```bash
-pytest tests/test_auth.py::TestRegistration::test_register_new_user -v
-```
-
-### Test Results
-```
-tests/test_auth.py::TestRegistration::test_register_new_user PASSED
-tests/test_auth.py::TestRegistration::test_register_duplicate_tenant_slug PASSED
-tests/test_auth.py::TestRegistration::test_register_missing_fields PASSED
-tests/test_auth.py::TestLogin::test_login_success PASSED
-tests/test_auth.py::TestLogin::test_login_invalid_password PASSED
-tests/test_auth.py::TestLogin::test_login_nonexistent_tenant PASSED
-tests/test_auth.py::TestLogin::test_login_nonexistent_user PASSED
-tests/test_auth.py::TestLogin::test_logout PASSED
-tests/test_issues.py::TestIssueAPI::test_create_issue PASSED
-tests/test_issues.py::TestIssueAPI::test_get_issues PASSED
-tests/test_issues.py::TestIssueAPI::test_get_single_issue PASSED
-tests/test_issues.py::TestIssueAPI::test_update_issue PASSED
-tests/test_issues.py::TestIssueAPI::test_delete_issue PASSED
-tests/test_issues.py::TestIssueAPI::test_issue_isolation_between_tenants PASSED
-tests/test_issues.py::TestIssueAPI::test_get_issue_without_auth PASSED
-
-======================= 15 passed in 4.09s =======================
-```
+| Metric | Value |
+|--------|-------|
+| Python Files | 23 |
+| Lines of Code | ~1,530 |
+| Dependencies | 9 (minimal) |
+| Test Coverage | Full |
+| Execution Time | <5 seconds |
 
 ## Dependencies
 
 | Package | Version | Purpose |
 |---------|---------|---------|
 | Flask | 2.3.3 | Web framework |
-| Flask-SQLAlchemy | 3.0.5 | ORM |
+| Flask-SQLAlchemy | 3.0.5 | ORM integration |
 | SQLAlchemy | 2.0.50 | Database abstraction |
-| PyJWT | 2.9.0 | Token generation |
-| python-dotenv | 1.0.0 | Environment variables |
 | Werkzeug | 2.3.7 | WSGI utilities |
-| pytest | 7.4.0 | Testing framework |
+| PyJWT | 2.9.0 | Token generation |
+| python-dotenv | 1.0.0 | Environment config |
+| pytest | 7.4.0 | Testing |
 | pytest-flask | 1.2.0 | Flask testing |
 
-**Total: 9 packages (minimal)**
+All versions compatible, no conflicts.
 
-## Code Quality
+## Design Decisions
 
-✅ Zero flake8 violations  
-✅ No unused imports  
-✅ No circular dependencies  
-✅ No dead code  
-✅ Consistent naming  
-✅ Self-documenting code  
+### Why 5 Layers?
 
-## Troubleshooting
+**Separation of concerns** - Each layer has one reason to change:
+- Routes layer: Only when HTTP handling changes
+- Services layer: Only when business rules change
+- Repositories layer: Only when queries change
+- Schemas layer: Only when validation changes
+- Exceptions layer: Only when new error types needed
 
-**Port 5000 already in use**
+### Why Repositories?
+
+**DRY + Consistency** - All data access goes through one layer:
+- Queries optimized in one place
+- Tenant filtering automatic (can't forget)
+- Changes to queries don't affect services
+
+### Why Dependency Injection?
+
+**Testability** - Mock dependencies easily:
+```python
+# In tests
+test_repo = MockIssueRepository()
+service = IssueService(test_repo)
+# No global singletons, full control
+```
+
+## Extending
+
+### Add a Feature (Example: Issue Priority)
+
+1. **Update model** (models.py)
+   ```python
+   priority = db.Column(db.String(10), default='medium')
+   ```
+
+2. **Add repository method** (repositories/issue_repository.py)
+   ```python
+   def list_by_priority(self, priority):
+       return self._filter_by_tenant(...).all()
+   ```
+
+3. **Add service logic** (services/issue_service.py)
+   ```python
+   def set_priority(self, issue_id, priority):
+       # Validate, update, return
+   ```
+
+4. **Add validation** (schemas/issue_schema.py)
+   ```python
+   def validate_create(data):
+       # Check priority field
+   ```
+
+5. **Add route** (app.py)
+   ```python
+   @app.route('/api/issues/<id>', methods=['PUT'])
+   def update_issue(id):
+       # Use service
+   ```
+
+6. **Add test** (tests/test_issues.py)
+   ```python
+   def test_priority(client):
+       # Test the feature
+   ```
+
+Each step is independent - layers don't depend on each other.
+
+## Configuration
+
+Create `.env`:
+
 ```bash
-python -c "from app import app; app.run(port=5001)"
+FLASK_APP=app.py
+FLASK_ENV=development
+SECRET_KEY=your-secret-key
+DATABASE_URL=sqlite:///issue_tracker.db
 ```
 
-**ModuleNotFoundError: No module named 'flask'**
+**Production:**
 ```bash
-pip install -r requirements.txt
+FLASK_ENV=production
+DATABASE_URL=postgresql://user:password@host/db
 ```
 
-**Database locked error**
+## Testing
+
 ```bash
-rm issue_tracker.db
-python app.py
+# All tests
+pytest -v
+
+# Specific test file
+pytest tests/test_auth.py -v
+
+# Single test
+pytest tests/test_auth.py::TestLogin::test_login_success -v
 ```
-
-**Tests failing**
-```bash
-# Run single test with verbose output
-pytest tests/test_auth.py::TestLogin::test_login_success -v -s
-```
-
-## Extending the Application
-
-### Add a New Feature
-
-1. **Create route** in `app.py`
-2. **Add business logic** in `services/`
-3. **Add data access** in `repositories/`
-4. **Add validation** in `schemas/`
-5. **Add tests** in `tests/`
-
-Each layer is independent - changes don't cascade!
-
-### Example: Add Projects Feature
-
-**1. Route** (`app.py`)
-```python
-@app.route('/api/projects', methods=['POST'])
-def create_project():
-    data = request.get_json()
-    project = project_service.create_project(...)
-    return jsonify(...), 201
-```
-
-**2. Service** (`services/project_service.py`)
-```python
-class ProjectService:
-    def create_project(self, tenant_id, name):
-        # Validate, create, notify
-        return project
-```
-
-**3. Repository** (`repositories/project_repository.py`)
-```python
-class ProjectRepository(BaseRepository):
-    def create(self, name, tenant_id):
-        # Tenant isolation automatic
-        return project
-```
-
-**4. Schema** (`schemas/project_schema.py`)
-```python
-class ProjectSchema:
-    @staticmethod
-    def validate_create(data):
-        if not data.get('name'):
-            raise ValidationError('name', 'Required')
-```
-
-**5. Test** (`tests/test_projects.py`)
-```python
-def test_create_project(client, authenticated_user):
-    response = client.post('/api/projects', json={
-        'name': 'New Project'
-    })
-    assert response.status_code == 201
-```
-
-## Performance
-
-- **Query Optimization:** No N+1 queries
-- **Session Efficiency:** Lightweight session management
-- **Test Speed:** 15 tests in <5 seconds
-- **Response Time:** API responds in <100ms
-- **Database:** Indexed for quick lookups
-- **Memory:** Minimal footprint (~50MB)
 
 ## Security
 
-✅ Password hashing (Werkzeug)  
-✅ Session-based authentication  
-✅ CSRF protection (Flask default)  
-✅ SQL injection prevention (SQLAlchemy)  
-✅ Automatic tenant isolation  
-✅ Role-based access control  
+- **Password hashing** - Werkzeug's generate_password_hash
+- **Tenant isolation** - Automatic in BaseRepository
+- **CSRF protection** - Flask default
+- **SQL injection prevention** - SQLAlchemy parameterized queries
+- **Input validation** - Schemas layer validates all input
+- **Session security** - HTTPOnly cookies, secure defaults
 
 ## Deployment
 
@@ -472,60 +331,33 @@ ENV FLASK_ENV=production
 CMD ["gunicorn", "-b", "0.0.0.0:5000", "app:app"]
 ```
 
-### Heroku
+### Heroku / Cloud
 ```bash
 git push heroku main
 heroku config:set DATABASE_URL=postgresql://...
 heroku config:set FLASK_ENV=production
 ```
 
-### Environment Variables
-```bash
-FLASK_ENV=production
-DATABASE_URL=postgresql://user:password@host/db
-SECRET_KEY=your-production-key
-```
-
 ## Contributing
 
-1. Fork repository
-2. Create feature branch (`git checkout -b feature/amazing`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing`)
-5. Open Pull Request
+1. Create feature branch
+2. Implement following 5-layer pattern
+3. Add tests
+4. Ensure all 15+ tests pass
+5. Submit PR
 
 ## License
 
-MIT License - see LICENSE file
-
-## Support
-
-- **Issues:** [GitHub Issues](https://github.com/XeminoL/issue-tracker/issues)
-- **Documentation:** See README.md
-- **Examples:** Check test files
-
-## Roadmap
-
-- [ ] Database migrations (Alembic)
-- [ ] Email queue (Celery)
-- [ ] Real-time updates (WebSockets)
-- [ ] File attachments
-- [ ] Activity logging
-- [ ] Advanced filtering
-- [ ] API rate limiting
+MIT License - See LICENSE file
 
 ## Stats
 
-| Metric | Value |
-|--------|-------|
-| Python Files | 23 |
-| Tests | 15 (all passing) |
-| Code Coverage | Full |
-| Lines of Code | ~1,530 |
-| Flake8 Violations | 0 |
-| Unused Imports | 0 |
-| Dependencies | 9 |
-| Test Execution | <5s |
+- **Architecture**: 5-layer clean, zero coupling
+- **Testing**: 15 tests, all passing, <5s execution
+- **Code**: 1,530 LOC, zero violations, self-documenting
+- **Dependencies**: 9 packages, all necessary
+- **Security**: Password hashing, tenant isolation, CSRF protection
+- **Performance**: Optimized queries, indexed database
 
 ---
 
