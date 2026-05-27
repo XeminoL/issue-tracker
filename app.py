@@ -42,17 +42,7 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session or 'tenant_id' not in session:
-            auth_token = request.cookies.get('auth_token')
-            if auth_token:
-                payload = auth_service.verify_token(auth_token)
-                if payload:
-                    session['user_id'] = payload['user_id']
-                    session['tenant_id'] = payload['tenant_id']
-                else:
-                    return redirect(url_for('login'))
-            else:
-                return redirect(url_for('login'))
-
+            return redirect(url_for('login'))
         user = get_current_user()
         tenant = get_current_tenant()
         if not user or not tenant:
@@ -121,21 +111,7 @@ def login():
 
             session['user_id'] = user.id
             session['tenant_id'] = tenant.id
-
-            response = redirect(url_for('dashboard'))
-
-            remember_me = data.get('remember_me') == 'on'
-            if remember_me:
-                token = auth_service.generate_token(user.id, tenant.id, expires_in=30*24*3600)
-                response.set_cookie(
-                    'auth_token',
-                    token,
-                    max_age=30*24*3600,
-                    httponly=True,
-                    samesite='Lax'
-                )
-
-            return response
+            return redirect(url_for('dashboard'))
         except NotFoundError:
             raise
         except ValidationError as e:
@@ -214,9 +190,7 @@ def dashboard():
 @login_required
 def logout():
     session.clear()
-    response = redirect(url_for('login'))
-    response.delete_cookie('auth_token')
-    return response
+    return redirect(url_for('login'))
 
 
 @app.route('/api/issues', methods=['GET'])
