@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: issue-tracker-app
+    ports:
+      - "5000:5000"
+    environment:
+      FLASK_APP: app.py
+      FLASK_ENV: production
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-this}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-change-this-in-production}@db:5432/issue_tracker
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+    command: python app.py
+    networks:
+      - issue-tracker-network
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    container_name: issue-tracker-db
+    environment:
+      POSTGRES_DB: issue_tracker
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-this-in-production}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - issue-tracker-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  issue-tracker-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
