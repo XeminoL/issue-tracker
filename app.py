@@ -106,7 +106,7 @@ def login():
                 tenant_id=tenant.id
             ).first()
 
-            if not user or not auth_service.verify_password(data.get('password'), user.password_hash):
+            if not user or not auth_service.verify_password(user.password_hash, data.get('password')):
                 raise ValidationError('credentials', 'Invalid email or password')
 
             session['user_id'] = user.id
