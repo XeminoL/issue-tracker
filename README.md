@@ -1,7 +1,5 @@
 # Issue Tracker
 
-Multi-tenant issue tracking system with clean architecture, automatic tenant isolation, and 15 passing tests.
-
 ![Tests](https://img.shields.io/badge/tests-15%2F15-brightgreen)
 ![Quality](https://img.shields.io/badge/quality-0%20violations-brightgreen)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
