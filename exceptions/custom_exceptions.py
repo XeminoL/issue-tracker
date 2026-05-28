@@ -12,12 +12,6 @@ class NotFoundError(Exception):
         super().__init__(f'{resource_type} {resource_id} not found')
 
 
-class UnauthorizedError(Exception):
-    def __init__(self, message='Authentication required'):
-        self.message = message
-        super().__init__(message)
-
-
 class ForbiddenError(Exception):
     def __init__(self, message='Permission denied'):
         self.message = message

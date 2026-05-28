@@ -1,13 +1,14 @@
 # Issue Tracker
 
+Multi-tenant issue tracking system with clean architecture, automatic tenant isolation, and rate limiting.
+
 ![Tests](https://img.shields.io/badge/tests-15%2F15-brightgreen)
-![Quality](https://img.shields.io/badge/quality-0%20violations-brightgreen)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
 ## Purpose
 
-Track issues across multiple tenants with complete data isolation, role-based access, and email notifications.
+Track issues across multiple tenants with complete data isolation, role-based access, email notifications, and API rate limiting.
 
 ## Quick Start
 
@@ -28,24 +29,24 @@ python app.py
 
 ```
 issue-tracker/
-├── app.py                    # Routes
+├── app.py                    # Routes & error handlers
 ├── models.py                 # Database models
 ├── config.py                 # Configuration
 ├── email_service.py          # Email notifications
+├── conftest.py               # Test fixtures
 │
 ├── services/                 # Business logic
-│   ├── auth_service.py       # Password hashing, tokens
+│   ├── auth_service.py       # Password hashing
 │   ├── permission_service.py # Authorization
 │   ├── issue_service.py      # Issue workflows
 │   └── comment_service.py    # Comment workflows
 │
-├── repositories/             # Data access
-│   ├── base_repository.py    # Auto tenant filtering
-│   ├── issue_repository.py   # Issue queries
-│   ├── comment_repository.py # Comment queries
-│   └── tenant_repository.py  # Tenant queries
+├── repositories/             # Data access (auto tenant filter)
+│   ├── base_repository.py
+│   ├── issue_repository.py
+│   └── tenant_repository.py
 │
-├── schemas/                  # Input validation
+├── schemas/                  # Input validation & serialization
 │   ├── issue_schema.py
 │   └── comment_schema.py
 │
@@ -55,18 +56,17 @@ issue-tracker/
 ├── templates/                # HTML templates
 ├── static/                   # CSS, JS
 ├── tests/                    # Test suite
-├── requirements.txt          # Dependencies
-└── .env                      # Environment config
+├── requirements.txt
+└── .env
 ```
 
 ## Configuration
 
 ```bash
 # .env
-FLASK_APP=app.py
-FLASK_ENV=development
 SECRET_KEY=your-secret-key
 DATABASE_URL=sqlite:///issue_tracker.db
+FLASK_ENV=development
 ```
 
 For PostgreSQL production:
@@ -82,8 +82,21 @@ DATABASE_URL=postgresql://user:password@localhost/issue_tracker
 - Comments on issues
 - Email notifications
 - Role-based access (admin/member)
+- API rate limiting
 - Dark mode
 - RESTful API
+
+## Rate Limits
+
+| Endpoint | Limit |
+|----------|-------|
+| `POST /login` | 5/minute |
+| `POST /register` | 3/minute |
+| `GET /api/issues` | 30/minute |
+| `POST /api/issues` | 10/minute |
+| `PUT /api/issues/<id>` | 10/minute |
+| `DELETE /api/issues/<id>` | 5/minute |
+| Default | 200/day, 50/hour |
 
 ## API
 
@@ -127,6 +140,14 @@ Content-Type: application/json
 DELETE /api/issues/{issue_id}
 ```
 
+### Assign Issue
+```http
+POST /api/issues/{issue_id}/assign
+Content-Type: application/json
+
+{"assigned_to": 2}
+```
+
 ### Get Comments
 ```http
 GET /api/issues/{issue_id}/comments
@@ -159,35 +180,13 @@ All tests pass: **15/15 ✅**
 
 - Flask 2.3.3
 - Flask-SQLAlchemy 3.0.5
+- Flask-Limiter 4.1.1
 - SQLAlchemy 2.0.50
 - Werkzeug 2.3.7
 - PyJWT 2.9.0
 - python-dotenv 1.0.0
 - pytest 7.4.0
 - pytest-flask 1.2.0
-
-## Deployment
-
-### Docker
-
-```dockerfile
-FROM python:3.11-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY . .
-ENV FLASK_ENV=production
-CMD ["gunicorn", "-b", "0.0.0.0:5000", "app:app"]
-```
-
-### Heroku
-
-```bash
-git push heroku main
-heroku config:set DATABASE_URL=postgresql://...
-heroku config:set FLASK_ENV=production
-heroku config:set SECRET_KEY=your-key
-```
 
 ## Development
 
@@ -201,21 +200,6 @@ To add a feature:
 6. Add tests (tests/)
 7. Run `pytest -v` to verify
 
-## Stats
-
-| Metric | Value |
-|--------|-------|
-| Python Files | 23 |
-| Lines of Code | 1,530 |
-| Tests | 15 (all passing) |
-| Dependencies | 9 |
-| Flake8 Violations | 0 |
-| Test Execution | <5 seconds |
-
 ## License
 
 MIT - See LICENSE file
-
----
-
-**Status:** Production Ready ✅

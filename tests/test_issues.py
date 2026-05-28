@@ -96,7 +96,7 @@ class TestIssueAPI:
         data = json.loads(response.data)
         assert data['message'] == 'Issue updated'
 
-        updated_issue = Issue.query.get(issue.id)
+        updated_issue = db.session.get(Issue, issue.id)
         assert updated_issue.title == 'Updated Title'
         assert updated_issue.status == 'closed'
 
@@ -119,7 +119,7 @@ class TestIssueAPI:
         data = json.loads(response.data)
         assert data['message'] == 'Issue deleted'
 
-        deleted_issue = Issue.query.get(issue_id)
+        deleted_issue = db.session.get(Issue, issue_id)
         assert deleted_issue is None
 
     def test_issue_isolation_between_tenants(self, authenticated_client, tenant, user):
