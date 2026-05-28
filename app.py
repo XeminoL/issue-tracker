@@ -8,6 +8,8 @@ from flask import (
     url_for
 )
 from functools import wraps
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from config import Config
 from models import db, User, Tenant
 from exceptions import (
@@ -30,6 +32,13 @@ from email_service import email_service
 app = Flask(__name__)
 app.config.from_object(Config)
 db.init_app(app)
+
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
+)
 
 with app.app_context():
     db.create_all()
@@ -86,6 +95,11 @@ def handle_unauthorized(e):
     return jsonify({'error': e.message}), 401
 
 
+@app.errorhandler(429)
+def handle_ratelimit(e):
+    return jsonify({'error': 'Rate limit exceeded. Too many requests.'}), 429
+
+
 @app.route('/')
 def index():
     if 'user_id' in session:
@@ -94,6 +108,7 @@ def index():
 
 
 @app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")
 def login():
     if request.method == 'POST':
         try:
@@ -124,6 +139,7 @@ def login():
 
 
 @app.route('/register', methods=['GET', 'POST'])
+@limiter.limit("3 per minute")
 def register():
     if request.method == 'POST':
         try:
@@ -195,6 +211,7 @@ def logout():
 
 @app.route('/api/issues', methods=['GET'])
 @login_required
+@limiter.limit("30 per minute")
 def get_issues():
     tenant = get_current_tenant()
     issue_repo = IssueRepository(db, tenant.id)
@@ -204,6 +221,7 @@ def get_issues():
 
 @app.route('/api/issues', methods=['POST'])
 @login_required
+@limiter.limit("10 per minute")
 def create_issue():
     user = get_current_user()
     tenant = get_current_tenant()
@@ -233,6 +251,7 @@ def get_issue(issue_id):
 
 @app.route('/api/issues/<int:issue_id>', methods=['PUT'])
 @login_required
+@limiter.limit("10 per minute")
 def update_issue(issue_id):
     user = get_current_user()
     tenant = get_current_tenant()
@@ -258,6 +277,7 @@ def update_issue(issue_id):
 
 @app.route('/api/issues/<int:issue_id>', methods=['DELETE'])
 @login_required
+@limiter.limit("5 per minute")
 def delete_issue(issue_id):
     user = get_current_user()
     tenant = get_current_tenant()
