@@ -1,7 +1,7 @@
 import pytest
 from app import app, db
 from models import Tenant, User
-from services.auth_service import AuthService
+from services import AuthService
 
 auth_service = AuthService()
 
@@ -32,20 +32,6 @@ def user(tenant):
         email='john@test.com',
         password_hash=auth_service.hash_password('password123'),
         tenant_id=tenant.id
-    )
-    db.session.add(user)
-    db.session.commit()
-    return user
-
-
-@pytest.fixture
-def admin_user(tenant):
-    user = User(
-        name='Admin User',
-        email='admin@test.com',
-        password_hash=auth_service.hash_password('password123'),
-        tenant_id=tenant.id,
-        role='admin'
     )
     db.session.add(user)
     db.session.commit()

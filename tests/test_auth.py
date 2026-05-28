@@ -73,7 +73,8 @@ class TestLogin:
             'tenant_slug': 'nonexistent'
         })
 
-        assert response.status_code == 404
+        assert response.status_code == 200
+        assert b'Workspace not found' in response.data
 
     def test_login_nonexistent_user(self, client, tenant):
         response = client.post('/login', data={

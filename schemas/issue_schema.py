@@ -1,29 +1,24 @@
 from exceptions import ValidationError
 
 
+def _validate_title(title):
+    if not title or not str(title).strip():
+        raise ValidationError('title', 'Title is required')
+    if len(title) > 200:
+        raise ValidationError('title', 'Title must be less than 200 characters')
+
+
 class IssueSchema:
     @staticmethod
     def validate_create(data):
-        title = data.get('title')
-        if not title or not str(title).strip():
-            raise ValidationError('title', 'Title is required')
-        if len(title) > 200:
-            raise ValidationError('title', 'Title must be less than 200 characters')
-        return True
+        _validate_title(data.get('title'))
 
     @staticmethod
     def validate_update(data):
         if 'title' in data:
-            title = data['title']
-            if not title or not str(title).strip():
-                raise ValidationError('title', 'Title is required')
-            if len(title) > 200:
-                raise ValidationError('title', 'Title must be less than 200 characters')
-        if 'status' in data:
-            status = data['status']
-            if status not in ['open', 'closed']:
-                raise ValidationError('status', 'Invalid status')
-        return True
+            _validate_title(data['title'])
+        if 'status' in data and data['status'] not in ['open', 'closed']:
+            raise ValidationError('status', 'Invalid status')
 
     @staticmethod
     def serialize(issue):
@@ -34,8 +29,8 @@ class IssueSchema:
             'status': issue.status,
             'created_by': issue.created_by,
             'assigned_to': issue.assigned_to,
-            'created_at': issue.created_at.isoformat(),
-            'updated_at': issue.updated_at.isoformat(),
+            'created_at': issue.created_at.strftime('%Y-%m-%d - %H:%M:%S'),
+            'updated_at': issue.updated_at.strftime('%Y-%m-%d - %H:%M:%S'),
         }
 
     @staticmethod

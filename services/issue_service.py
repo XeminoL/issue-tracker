@@ -1,22 +1,13 @@
-from exceptions import (
-    ValidationError,
-    NotFoundError,
-    ForbiddenError
-)
-from models import db, Issue
+from exceptions import NotFoundError
+from models import db, Issue, User
 from email_service import email_service
 
 
 class IssueService:
-    def __init__(self, permission_service=None):
+    def __init__(self, permission_service):
         self.permissions = permission_service
 
     def create_issue(self, tenant, user, title, description):
-        if not title or not title.strip():
-            raise ValidationError('title', 'Title is required')
-        if len(title) > 200:
-            raise ValidationError('title', 'Title too long (max 200)')
-
         self.permissions.require_can_create_issue(user)
 
         issue = Issue(
@@ -36,35 +27,14 @@ class IssueService:
         )
         return issue
 
-    def get_issue(self, issue_id, tenant):
-        issue = Issue.query.filter_by(
-            id=issue_id,
-            tenant_id=tenant.id
-        ).first()
-        if not issue:
-            raise NotFoundError('Issue', issue_id)
-        return issue
-
-    def list_issues(self, tenant):
-        return Issue.query.filter_by(tenant_id=tenant.id).all()
-
-    def update_issue(self, issue, tenant, user, title=None,
-                     description=None, status=None):
+    def update_issue(self, issue, user, title=None, description=None, status=None):
         self.permissions.require_can_edit_issue(user, issue)
 
         if title is not None:
-            if not title or not title.strip():
-                raise ValidationError('title', 'Title is required')
-            if len(title) > 200:
-                raise ValidationError('title', 'Title too long')
             issue.title = title
-
         if description is not None:
             issue.description = description
-
         if status is not None:
-            if status not in ['open', 'closed']:
-                raise ValidationError('status', 'Invalid status')
             issue.status = status
 
         db.session.commit()
@@ -76,9 +46,9 @@ class IssueService:
         db.session.commit()
 
     def assign_issue(self, issue, tenant, user, assigned_to_id):
-        self.permissions.require_can_assign_issue(user)
+        self.permissions.require_is_admin(user)
 
-        assigned_user = Issue.query.filter_by(
+        assigned_user = User.query.filter_by(
             id=assigned_to_id,
             tenant_id=tenant.id
         ).first()
