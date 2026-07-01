@@ -15,3 +15,8 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     DEBUG = os.getenv('FLASK_ENV', 'development') == 'development'
+
+    # CSRF protection (Flask-WTF). Disabled automatically under TESTING so the
+    # API test client does not need to fetch a token for every request.
+    WTF_CSRF_ENABLED = os.getenv('WTF_CSRF_ENABLED', 'true').lower() == 'true'
+    WTF_CSRF_TIME_LIMIT = None  # token valid for the whole session

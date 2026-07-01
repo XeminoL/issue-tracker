@@ -1,6 +1,6 @@
 from exceptions import NotFoundError
 from models import db, Issue, User
-from email_service import email_service
+from services.email_service import email_service
 
 
 class IssueService:

@@ -1,6 +1,7 @@
 import pytest
 import json
 from models import Issue
+from app import db
 
 
 class TestIssueAPI:
@@ -40,7 +41,6 @@ class TestIssueAPI:
             tenant_id=tenant.id,
             created_by=user.id
         )
-        from app import db
         db.session.add(issue1)
         db.session.add(issue2)
         db.session.commit()
@@ -61,7 +61,6 @@ class TestIssueAPI:
             tenant_id=tenant.id,
             created_by=user.id
         )
-        from app import db
         db.session.add(issue)
         db.session.commit()
 
@@ -80,7 +79,6 @@ class TestIssueAPI:
             tenant_id=tenant.id,
             created_by=user.id
         )
-        from app import db
         db.session.add(issue)
         db.session.commit()
 
@@ -108,7 +106,6 @@ class TestIssueAPI:
             tenant_id=tenant.id,
             created_by=user.id
         )
-        from app import db
         db.session.add(issue)
         db.session.commit()
 
@@ -123,7 +120,6 @@ class TestIssueAPI:
         assert deleted_issue is None
 
     def test_issue_isolation_between_tenants(self, authenticated_client, tenant, user):
-        from app import db
         from models import Tenant
 
         issue = Issue(
@@ -141,6 +137,7 @@ class TestIssueAPI:
         db.session.commit()
 
         with authenticated_client.session_transaction() as sess:
+            sess.pop('tenant_id')
             sess['tenant_id'] = other_tenant.id
 
         response = authenticated_client.get('/api/issues')

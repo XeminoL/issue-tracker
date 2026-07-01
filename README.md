@@ -1,14 +1,60 @@
 # Issue Tracker
 
-Multi-tenant issue tracking system with clean architecture, automatic tenant isolation, and rate limiting.
+A multi-tenant issue-tracking backend built in Flask with **clean, layered architecture**,
+automatic tenant isolation, role-based access control, CSRF protection, rate limiting,
+database migrations, and Docker.
 
-![Tests](https://img.shields.io/badge/tests-15%2F15-brightgreen)
+![Tests](https://img.shields.io/badge/tests-20%2F20%20passing-brightgreen)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
+![Flask](https://img.shields.io/badge/Flask-2.3-black)
+![Docker](https://img.shields.io/badge/docker-ready-2496ed)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-## Purpose
+Track issues across multiple organizations (tenants) with complete data isolation between
+them, role-based access, email notifications, and per-endpoint rate limiting.
 
-Track issues across multiple tenants with complete data isolation, role-based access, email notifications, and API rate limiting.
+## Why this project
+
+It is a small app built the way a real backend is built — not a single-file demo. The point
+was to practice **separation of concerns** and **security-by-default multi-tenancy**:
+
+- **Layered architecture** — routes stay thin; business rules live in services; all database
+  access goes through repositories; every payload passes through a schema. Each layer has one
+  job, so the code is easy to test and change.
+- **Tenant isolation by construction** — the base repository filters every query by the current
+  tenant automatically, so one organization can never read another's data by accident. There is
+  a test (`test_issue_isolation_between_tenants`) that proves it.
+- **Defence in depth** — hashed passwords, role checks (admin/member), input validation,
+  CSRF protection on the HTML forms, and rate limits on the auth and API endpoints.
+- **Ready to run anywhere** — `docker compose up` brings up the app with PostgreSQL; Alembic
+  migrations own the schema; a `/health` endpoint backs the container health check.
+
+## Architecture at a glance
+
+```
+        HTTP request
+            │
+     ┌──────▼───────┐   thin controllers: parse, delegate, respond
+     │   app.py     │   (routes + error handlers)
+     └──────┬───────┘
+            │
+     ┌──────▼───────┐   business rules & authorization
+     │  services/   │   auth · permission · issue · comment
+     └──────┬───────┘
+            │
+     ┌──────▼───────┐   data access — auto-filters by tenant
+     │ repositories/│   base · issue · tenant
+     └──────┬───────┘
+            │
+     ┌──────▼───────┐   SQLAlchemy models  →  SQLite / PostgreSQL
+     │  models.py   │   Tenant · User · Issue · Comment
+     └──────────────┘
+
+  schemas/     validate input & serialize output (marshmallow-style)
+  exceptions/  typed domain errors, mapped to HTTP status codes
+```
+
+Data model: **Tenant → Users → Issues → Comments**, with every table scoped to a tenant.
 
 ## Quick Start
 
@@ -25,21 +71,36 @@ python app.py
 # Open http://localhost:5000
 ```
 
+### Run with Docker (app + PostgreSQL)
+
+```bash
+docker compose up --build          # starts the app and a Postgres database
+docker compose exec web flask db upgrade   # apply migrations
+# Open http://localhost:5000  ·  health check at /health
+```
+
+### Database migrations (Alembic / Flask-Migrate)
+
+```bash
+export USE_MIGRATIONS=1            # let Alembic own the schema (skip create_all)
+flask db upgrade                   # apply the latest migration
+flask db migrate -m "your change"  # after editing models, generate a new one
+```
+
 ## Project Structure
 
 ```
 issue-tracker/
-├── app.py                    # Routes & error handlers
-├── models.py                 # Database models
-├── config.py                 # Configuration
-├── email_service.py          # Email notifications
-├── conftest.py               # Test fixtures
+├── app.py                    # Routes, error handlers, CSRF, /health
+├── models.py                 # Database models (Tenant · User · Issue · Comment)
+├── config.py                 # Configuration (env-driven)
 │
 ├── services/                 # Business logic
 │   ├── auth_service.py       # Password hashing
 │   ├── permission_service.py # Authorization
 │   ├── issue_service.py      # Issue workflows
-│   └── comment_service.py    # Comment workflows
+│   ├── comment_service.py    # Comment workflows
+│   └── email_service.py      # Email notifications
 │
 ├── repositories/             # Data access (auto tenant filter)
 │   ├── base_repository.py
@@ -47,15 +108,20 @@ issue-tracker/
 │   └── tenant_repository.py
 │
 ├── schemas/                  # Input validation & serialization
+│   ├── base_schema.py
 │   ├── issue_schema.py
 │   └── comment_schema.py
 │
-├── exceptions/               # Custom exceptions
+├── exceptions/               # Typed domain errors → HTTP codes
 │   └── custom_exceptions.py
 │
-├── templates/                # HTML templates
+├── migrations/               # Alembic migrations (Flask-Migrate)
+├── templates/                # HTML templates (CSRF-protected forms)
 ├── static/                   # CSS, JS
-├── tests/                    # Test suite
+├── tests/                    # Test suite — conftest.py + 3 test files
+│
+├── Dockerfile                # Production image (gunicorn)
+├── docker-compose.yml        # App + PostgreSQL
 ├── requirements.txt
 └── .env
 ```
@@ -174,19 +240,23 @@ pytest tests/test_auth.py -v
 pytest tests/test_auth.py::TestLogin::test_login_success -v
 ```
 
-All tests pass: **15/15 ✅**
+All tests pass: **20/20 ✅** — 8 auth tests, 7 issue tests (CRUD, missing-auth, cross-tenant
+isolation), 2 comment tests, 2 CSRF tests (form rejected without a token; API exempt), and a
+health-check test.
 
 ## Dependencies
 
 - Flask 2.3.3
 - Flask-SQLAlchemy 3.0.5
 - Flask-Limiter 4.1.1
+- Flask-WTF 1.2.1 (CSRF protection)
+- Flask-Migrate 4.0.5 (Alembic migrations)
 - SQLAlchemy 2.0.50
 - Werkzeug 2.3.7
-- PyJWT 2.9.0
+- psycopg2-binary 2.9.9 (PostgreSQL driver)
+- gunicorn 21.2.0 (production server)
 - python-dotenv 1.0.0
-- pytest 7.4.0
-- pytest-flask 1.2.0
+- pytest 7.4.0 · pytest-flask 1.2.0
 
 ## Development
 

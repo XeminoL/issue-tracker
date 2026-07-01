@@ -1,7 +1,8 @@
 from exceptions import ValidationError
+from schemas.base_schema import BaseSchema
 
 
-class CommentSchema:
+class CommentSchema(BaseSchema):
     @staticmethod
     def validate_create(data):
         content = data.get('content')
@@ -18,6 +19,3 @@ class CommentSchema:
             'created_at': comment.created_at.strftime('%Y-%m-%d - %H:%M:%S'),
         }
 
-    @staticmethod
-    def serialize_list(comments):
-        return [CommentSchema.serialize(comment) for comment in comments]

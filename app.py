@@ -1,20 +1,39 @@
+import os
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_wtf import CSRFProtect
+from flask_wtf.csrf import CSRFError
+from flask_migrate import Migrate
 
 from config import Config
 from models import db, User, Tenant
 from exceptions import ValidationError, NotFoundError, ForbiddenError, ConflictError
-from services import AuthService, PermissionService, IssueService, CommentService
+from services import AuthService, PermissionService, IssueService, CommentService, email_service
 from repositories import TenantRepository, IssueRepository
 from schemas import IssueSchema, CommentSchema
-from email_service import email_service
+
+SESSION_USER_KEY = 'user_id'
+SESSION_TENANT_KEY = 'tenant_id'
+ROLE_ADMIN = 'admin'
+ROLE_MEMBER = 'member'
+STATUS_OPEN = 'open'
+STATUS_CLOSED = 'closed'
 
 
 app = Flask(__name__)
 app.config.from_object(Config)
 db.init_app(app)
+
+# Database migrations (Alembic via Flask-Migrate): `flask db migrate/upgrade`.
+migrate = Migrate(app, db)
+
+# CSRF protection for the HTML forms (login / register / logout). The JSON API
+# authenticates by session cookie and is rate-limited, so those endpoints are
+# exempted below — a token would otherwise have to be threaded through every
+# programmatic call. CSRF is toggled off automatically under TESTING.
+csrf = CSRFProtect(app)
 
 limiter = Limiter(
     app=app,
@@ -23,8 +42,11 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 
-with app.app_context():
-    db.create_all()
+# Create tables on startup for the simple SQLite dev flow. When migrations are
+# in use (flask db ...), set USE_MIGRATIONS=1 so Alembic owns the schema instead.
+if os.getenv('USE_MIGRATIONS', '').lower() not in ('1', 'true'):
+    with app.app_context():
+        db.create_all()
 
 auth_service = AuthService()
 permission_service = PermissionService()
@@ -33,12 +55,12 @@ comment_service = CommentService()
 
 
 def get_current_user():
-    user_id = session.get('user_id')
+    user_id = session.get(SESSION_USER_KEY)
     return db.session.get(User, user_id) if user_id else None
 
 
 def get_current_tenant():
-    tenant_id = session.get('tenant_id')
+    tenant_id = session.get(SESSION_TENANT_KEY)
     return db.session.get(Tenant, tenant_id) if tenant_id else None
 
 
@@ -79,9 +101,25 @@ def handle_ratelimit(e):
     return jsonify({'error': 'Rate limit exceeded. Too many requests.'}), 429
 
 
+@app.errorhandler(CSRFError)
+def handle_csrf_error(e):
+    return render_template('login.html', error='Your session expired. Please try again.'), 400
+
+
+@app.route('/health')
+@limiter.exempt
+def health():
+    """Liveness probe for Docker / load balancers: checks the DB is reachable."""
+    try:
+        db.session.execute(db.text('SELECT 1'))
+        return jsonify({'status': 'ok', 'database': 'up'}), 200
+    except Exception:
+        return jsonify({'status': 'degraded', 'database': 'down'}), 503
+
+
 @app.route('/')
 def index():
-    if 'user_id' in session:
+    if SESSION_USER_KEY in session:
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
 
@@ -94,14 +132,17 @@ def login():
 
     data = request.form
     try:
+        if not data or not data.get('tenant_slug') or not data.get('email') or not data.get('password'):
+            raise ValidationError('fields', 'Missing required fields')
+
         tenant = TenantRepository(db).get_by_slug(data.get('tenant_slug'))
         user = User.query.filter_by(email=data.get('email'), tenant_id=tenant.id).first()
 
         if not user or not auth_service.verify_password(user.password_hash, data.get('password')):
             raise ValidationError('credentials', 'Invalid email or password')
 
-        session['user_id'] = user.id
-        session['tenant_id'] = tenant.id
+        session[SESSION_USER_KEY] = user.id
+        session[SESSION_TENANT_KEY] = tenant.id
         return redirect(url_for('dashboard'))
     except NotFoundError:
         return render_template('login.html', error='Workspace not found')
@@ -134,15 +175,15 @@ def register():
             email=email,
             password_hash=auth_service.hash_password(password),
             tenant_id=tenant.id,
-            role='admin'
+            role=ROLE_ADMIN
         )
         db.session.add(user)
         db.session.commit()
 
         email_service.send_welcome_email(user.email, user.name, tenant.name)
 
-        session['user_id'] = user.id
-        session['tenant_id'] = tenant.id
+        session[SESSION_USER_KEY] = user.id
+        session[SESSION_TENANT_KEY] = tenant.id
         return redirect(url_for('dashboard'))
     except (ValidationError, ConflictError) as e:
         return render_template('register.html', error=e.message)
@@ -166,6 +207,7 @@ def logout():
 
 
 @app.route('/api/issues', methods=['GET'])
+@csrf.exempt
 @login_required
 @limiter.limit("30 per minute")
 def get_issues():
@@ -175,10 +217,13 @@ def get_issues():
 
 
 @app.route('/api/issues', methods=['POST'])
+@csrf.exempt
 @login_required
 @limiter.limit("10 per minute")
 def create_issue():
     data = request.get_json()
+    if not data:
+        raise ValidationError('body', 'Request body is required')
     IssueSchema.validate_create(data)
 
     issue = issue_service.create_issue(
@@ -191,6 +236,7 @@ def create_issue():
 
 
 @app.route('/api/issues/<int:issue_id>', methods=['GET'])
+@csrf.exempt
 @login_required
 def get_issue(issue_id):
     tenant = get_current_tenant()
@@ -199,6 +245,7 @@ def get_issue(issue_id):
 
 
 @app.route('/api/issues/<int:issue_id>', methods=['PUT'])
+@csrf.exempt
 @login_required
 @limiter.limit("10 per minute")
 def update_issue(issue_id):
@@ -218,6 +265,7 @@ def update_issue(issue_id):
 
 
 @app.route('/api/issues/<int:issue_id>', methods=['DELETE'])
+@csrf.exempt
 @login_required
 @limiter.limit("5 per minute")
 def delete_issue(issue_id):
@@ -228,6 +276,7 @@ def delete_issue(issue_id):
 
 
 @app.route('/api/issues/<int:issue_id>/assign', methods=['POST'])
+@csrf.exempt
 @login_required
 def assign_issue(issue_id):
     tenant = get_current_tenant()
@@ -239,6 +288,7 @@ def assign_issue(issue_id):
 
 
 @app.route('/api/issues/<int:issue_id>/comments', methods=['GET'])
+@csrf.exempt
 @login_required
 def get_comments(issue_id):
     tenant = get_current_tenant()
@@ -248,6 +298,7 @@ def get_comments(issue_id):
 
 
 @app.route('/api/issues/<int:issue_id>/comments', methods=['POST'])
+@csrf.exempt
 @login_required
 def add_comment(issue_id):
     tenant = get_current_tenant()

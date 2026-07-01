@@ -1,15 +1,16 @@
 from exceptions import ForbiddenError
+from models import ROLE_ADMIN, ROLE_MEMBER
 
 
 class PermissionService:
     def is_admin(self, user):
-        return user.role == 'admin'
+        return user.role == ROLE_ADMIN
 
     def can_edit_issue(self, user, issue):
         return self.is_admin(user) or issue.created_by == user.id
 
     def require_can_create_issue(self, user):
-        if user.role not in ['admin', 'member']:
+        if user.role not in [ROLE_ADMIN, ROLE_MEMBER]:
             raise ForbiddenError('Cannot create issues')
 
     def require_can_edit_issue(self, user, issue):

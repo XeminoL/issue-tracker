@@ -130,6 +130,7 @@
         {% endif %}
 
         <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-group">
                 <label for="tenant_name">Workspace Name:</label>
                 <input type="text" id="tenant_name" name="tenant_name" placeholder="e.g., Acme Corp" required>

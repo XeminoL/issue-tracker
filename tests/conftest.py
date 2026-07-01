@@ -9,12 +9,27 @@ auth_service = AuthService()
 @pytest.fixture
 def client():
     app.config['TESTING'] = True
+    app.config['WTF_CSRF_ENABLED'] = False  # skip token exchange in tests
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
     with app.app_context():
         db.create_all()
         yield app.test_client()
         db.session.remove()
         db.drop_all()
+
+
+@pytest.fixture
+def csrf_client():
+    """A client with CSRF protection ON, to prove form POSTs are guarded."""
+    app.config['TESTING'] = True
+    app.config['WTF_CSRF_ENABLED'] = True
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+    with app.app_context():
+        db.create_all()
+        yield app.test_client()
+        db.session.remove()
+        db.drop_all()
+        app.config['WTF_CSRF_ENABLED'] = False
 
 
 @pytest.fixture

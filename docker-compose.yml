@@ -1,0 +1,34 @@
+# Run the app together with a PostgreSQL database:
+#   docker compose up --build
+# Then apply migrations once the containers are up:
+#   docker compose exec web flask db upgrade
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: issue
+      POSTGRES_PASSWORD: issue
+      POSTGRES_DB: issue_tracker
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U issue"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      SECRET_KEY: change-this-in-production
+      DATABASE_URL: postgresql://issue:issue@db:5432/issue_tracker
+      FLASK_ENV: production
+      FLASK_APP: app.py
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
