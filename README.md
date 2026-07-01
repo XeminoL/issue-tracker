@@ -1,8 +1,7 @@
 # Issue Tracker
 
-A multi-tenant issue-tracking backend built in Flask with **clean, layered architecture**,
-automatic tenant isolation, role-based access control, CSRF protection, rate limiting,
-database migrations, and Docker.
+A multi-tenant issue tracker in Flask. Multiple organizations share one app, and
+each organization only ever sees its own issues.
 
 ![Tests](https://img.shields.io/badge/tests-20%2F20%20passing-brightgreen)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
@@ -10,24 +9,20 @@ database migrations, and Docker.
 ![Docker](https://img.shields.io/badge/docker-ready-2496ed)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-Track issues across multiple organizations (tenants) with complete data isolation between
-them, role-based access, email notifications, and per-endpoint rate limiting.
+## Notes
 
-## Why this project
+I built this to practice writing a backend in layers instead of one big file.
+A few things I focused on:
 
-It is a small app built the way a real backend is built — not a single-file demo. The point
-was to practice **separation of concerns** and **security-by-default multi-tenancy**:
-
-- **Layered architecture** — routes stay thin; business rules live in services; all database
-  access goes through repositories; every payload passes through a schema. Each layer has one
-  job, so the code is easy to test and change.
-- **Tenant isolation by construction** — the base repository filters every query by the current
-  tenant automatically, so one organization can never read another's data by accident. There is
-  a test (`test_issue_isolation_between_tenants`) that proves it.
-- **Defence in depth** — hashed passwords, role checks (admin/member), input validation,
-  CSRF protection on the HTML forms, and rate limits on the auth and API endpoints.
-- **Ready to run anywhere** — `docker compose up` brings up the app with PostgreSQL; Alembic
-  migrations own the schema; a `/health` endpoint backs the container health check.
+- Tenant isolation is done in the base repository, which filters every query by
+  `tenant_id`. So it's enforced in one place, not repeated in every route. The
+  test `test_issue_isolation_between_tenants` checks it holds.
+- Routes are thin. Business rules go in `services/`, database access in
+  `repositories/`, request/response shapes in `schemas/`.
+- Passwords are hashed, roles are admin/member, forms have CSRF protection, and
+  login and writes are rate-limited.
+- `docker compose up` runs the app with Postgres. Alembic handles the schema and
+  `/health` backs the container health check.
 
 ## Architecture at a glance
 
@@ -240,9 +235,7 @@ pytest tests/test_auth.py -v
 pytest tests/test_auth.py::TestLogin::test_login_success -v
 ```
 
-All tests pass: **20/20 ✅** — 8 auth tests, 7 issue tests (CRUD, missing-auth, cross-tenant
-isolation), 2 comment tests, 2 CSRF tests (form rejected without a token; API exempt), and a
-health-check test.
+20 tests: auth, issue CRUD, cross-tenant isolation, comments, CSRF, and the health check.
 
 ## Dependencies
 
@@ -258,18 +251,6 @@ health-check test.
 - python-dotenv 1.0.0
 - pytest 7.4.0 · pytest-flask 1.2.0
 
-## Development
-
-To add a feature:
-
-1. Update database model if needed (models.py)
-2. Add repository methods (repositories/)
-3. Add service logic (services/)
-4. Add validation (schemas/)
-5. Add route handler (app.py)
-6. Add tests (tests/)
-7. Run `pytest -v` to verify
-
 ## License
 
-MIT - See LICENSE file
+MIT. See the LICENSE file.
