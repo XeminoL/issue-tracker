@@ -135,19 +135,14 @@ For PostgreSQL production:
 DATABASE_URL=postgresql://user:password@localhost/issue_tracker
 ```
 
-## Features
+## What it does
 
-- Multi-tenant with automatic data isolation
-- User registration and authentication
-- Issue CRUD with status tracking
-- Comments on issues
-- Email notifications
-- Role-based access (admin/member)
-- API rate limiting
-- Dark mode
-- RESTful API
+Register an org, log in, and create / assign / comment on issues that only your
+org can see. Roles are admin and member. There's a JSON API next to the web UI,
+the auth and API routes are rate-limited, it sends an email when an issue changes,
+and there's a dark-mode toggle.
 
-## Rate Limits
+## Rate limits
 
 | Endpoint | Limit |
 |----------|-------|

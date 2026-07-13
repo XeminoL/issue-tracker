@@ -1,5 +1,4 @@
-"""Tests for the cross-cutting features: health probe, CSRF protection,
-and the comment endpoints. These complement the auth and issue suites."""
+"""Health, CSRF, and comment endpoint tests."""
 import json
 
 
