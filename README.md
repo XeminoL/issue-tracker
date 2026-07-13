@@ -82,12 +82,13 @@ flask db upgrade                   # apply the latest migration
 flask db migrate -m "your change"  # after editing models, generate a new one
 ```
 
-### Deploy (Render)
+### Deploy
 
-There's a `render.yaml` in the repo, so on [render.com](https://render.com):
-New → Blueprint → pick this repo. Render reads the file and spins up the web
-service plus a free Postgres database, generates the SECRET_KEY, and wires
-DATABASE_URL in. The health check is `/health`.
+The app is a normal Docker image, so anything that runs a container works. For a
+free demo I use [Koyeb](https://koyeb.com): connect the repo, it builds the
+Dockerfile, and set one env var `SECRET_KEY`. With no `DATABASE_URL` set it falls
+back to SQLite, which is fine for a demo (the data resets on redeploy). Point a
+real `DATABASE_URL` at a Postgres if you want it to stick. Health check: `/health`.
 
 ## Project Structure
 
