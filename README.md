@@ -82,6 +82,13 @@ flask db upgrade                   # apply the latest migration
 flask db migrate -m "your change"  # after editing models, generate a new one
 ```
 
+### Deploy (Render)
+
+There's a `render.yaml` in the repo, so on [render.com](https://render.com):
+New → Blueprint → pick this repo. Render reads the file and spins up the web
+service plus a free Postgres database, generates the SECRET_KEY, and wires
+DATABASE_URL in. The health check is `/health`.
+
 ## Project Structure
 
 ```
