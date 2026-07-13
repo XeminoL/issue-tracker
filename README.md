@@ -64,73 +64,60 @@ git clone https://github.com/XeminoL/issue-tracker.git
 cd issue-tracker
 
 python -m venv venv
-# Windows: .\venv\Scripts\Activate.ps1
-# macOS/Linux: source venv/bin/activate
 
 pip install -r requirements.txt
 python app.py
-# Open http://localhost:5000
 ```
 
 ### Run with Docker (app + PostgreSQL)
 
 ```bash
-docker compose up --build          # starts the app and a Postgres database
-docker compose exec web flask db upgrade   # apply migrations
-# Open http://localhost:5000  ·  health check at /health
+docker compose up --build          
+docker compose exec web flask db upgrade
 ```
 
 ### Database migrations (Alembic / Flask-Migrate)
 
 ```bash
-export USE_MIGRATIONS=1            # let Alembic own the schema (skip create_all)
-flask db upgrade                   # apply the latest migration
-flask db migrate -m "your change"  # after editing models, generate a new one
+export USE_MIGRATIONS=1            
+flask db upgrade                  
+flask db migrate -m "your change"  
 ```
-
-### Deploy
-
-The app is a normal Docker image, so anything that runs a container works. For a
-free demo I use [Koyeb](https://koyeb.com): connect the repo, it builds the
-Dockerfile, and set one env var `SECRET_KEY`. With no `DATABASE_URL` set it falls
-back to SQLite, which is fine for a demo (the data resets on redeploy). Point a
-real `DATABASE_URL` at a Postgres if you want it to stick. Health check: `/health`.
-
 ## Project Structure
 
 ```
 issue-tracker/
-├── app.py                    # Routes, error handlers, CSRF, /health
-├── models.py                 # Database models (Tenant · User · Issue · Comment)
-├── config.py                 # Configuration (env-driven)
+├── app.py                  
+├── models.py               
+├── config.py                
 │
-├── services/                 # Business logic
-│   ├── auth_service.py       # Password hashing
-│   ├── permission_service.py # Authorization
-│   ├── issue_service.py      # Issue workflows
-│   ├── comment_service.py    # Comment workflows
-│   └── email_service.py      # Email notifications
+├── services/              
+│   ├── auth_service.py      
+│   ├── permission_service.py 
+│   ├── issue_service.py      
+│   ├── comment_service.py    
+│   └── email_service.py      
 │
-├── repositories/             # Data access (auto tenant filter)
+├── repositories/             
 │   ├── base_repository.py
 │   ├── issue_repository.py
 │   └── tenant_repository.py
 │
-├── schemas/                  # Input validation & serialization
+├── schemas/                  
 │   ├── base_schema.py
 │   ├── issue_schema.py
 │   └── comment_schema.py
 │
-├── exceptions/               # Typed domain errors → HTTP codes
+├── exceptions/               
 │   └── custom_exceptions.py
 │
-├── migrations/               # Alembic migrations (Flask-Migrate)
-├── templates/                # HTML templates (CSRF-protected forms)
-├── static/                   # CSS, JS
-├── tests/                    # Test suite — conftest.py + 3 test files
+├── migrations/               
+├── templates/               
+├── static/                  
+├── tests/                    
 │
-├── Dockerfile                # Production image (gunicorn)
-├── docker-compose.yml        # App + PostgreSQL
+├── Dockerfile                
+├── docker-compose.yml        
 ├── requirements.txt
 └── .env
 ```
@@ -138,7 +125,6 @@ issue-tracker/
 ## Configuration
 
 ```bash
-# .env
 SECRET_KEY=your-secret-key
 DATABASE_URL=sqlite:///issue_tracker.db
 FLASK_ENV=development
@@ -234,13 +220,10 @@ Content-Type: application/json
 ## Testing
 
 ```bash
-# Run all tests
 pytest -v
 
-# Run specific test file
 pytest tests/test_auth.py -v
 
-# Run single test
 pytest tests/test_auth.py::TestLogin::test_login_success -v
 ```
 
