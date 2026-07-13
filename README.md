@@ -9,6 +9,12 @@ each organization only ever sees its own issues.
 ![Docker](https://img.shields.io/badge/docker-ready-2496ed)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
+## Screenshots
+
+| Login | Dashboard |
+|---|---|
+| ![login](assets/screen-login.png) | ![dashboard](assets/screen-dashboard.png) |
+
 ## Notes
 
 I built this to practice writing a backend in layers instead of one big file.
