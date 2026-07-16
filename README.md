@@ -1,6 +1,6 @@
 # Issue Tracker
 
-A multi-tenant issue tracker in Flask. Multiple organizations share one app, and
+Multiple organizations share one app, and
 each organization only ever sees its own issues.
 
 ![Tests](https://img.shields.io/badge/tests-20%2F20%20passing-brightgreen)
