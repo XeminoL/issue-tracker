@@ -17,7 +17,7 @@ each organization only ever sees its own issues.
 
 ## Notes
 
-I built this to practice writing a backend in layers instead of one big file.
+The purpose of this is to practice writing a backend in layers instead of one big file.
 A few things I focused on:
 
 - Tenant isolation is done in the base repository, which filters every query by
