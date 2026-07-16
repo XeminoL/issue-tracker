@@ -18,7 +18,7 @@ each organization only ever sees its own issues.
 ## Notes
 
 The purpose of this is to practice writing a backend in layers instead of one big file.
-A few things I focused on:
+A few things to focus on:
 
 - Tenant isolation is done in the base repository, which filters every query by
   `tenant_id`. So it's enforced in one place, not repeated in every route. The
